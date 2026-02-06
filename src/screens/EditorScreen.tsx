@@ -117,6 +117,30 @@ export const EditorScreen: React.FC = () => {
         await loadFile(fileUri);
     }, [loadFile]);
 
+    const handleCreateFile = useCallback(() => {
+        setNewFileName('');
+        setShowNewFileModal(true);
+    }, []);
+
+    const handleConfirmCreateFile = useCallback(async () => {
+        if (!newFileName.trim() || !rootFolderUri) return;
+
+        let filename = newFileName.trim();
+        if (!filename.endsWith('.md') && !filename.endsWith('.txt')) {
+            filename += '.md';
+        }
+
+        try {
+            const fileUri = await createNewFile(rootFolderUri, filename, `# ${filename.replace(/\.(md|txt)$/, '')}\n\n`);
+            setShowNewFileModal(false);
+            setNewFileName('');
+            // 作成したファイルを開く
+            await loadFile(fileUri);
+        } catch (error) {
+            console.error('Error creating file:', error);
+        }
+    }, [newFileName, rootFolderUri, loadFile]);
+
     const handleSave = useCallback(async () => {
         if (!selectedFileUri) {
             Alert.alert('エラー', 'ファイルが選択されていません');
@@ -211,6 +235,7 @@ export const EditorScreen: React.FC = () => {
                             selectedFileUri={selectedFileUri}
                             onSelectFile={handleSelectFile}
                             onSelectFolder={handleSelectFolder}
+                            onCreateFile={handleCreateFile}
                         />
                     </View>
                 )}
@@ -305,6 +330,42 @@ export const EditorScreen: React.FC = () => {
                     </View>
                 </View>
             </View>
+
+            {/* 新規ファイル作成モーダル */}
+            <Modal
+                visible={showNewFileModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowNewFileModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>新規ファイル作成</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="ファイル名（例: memo.md）"
+                            placeholderTextColor={colors.textMuted}
+                            value={newFileName}
+                            onChangeText={setNewFileName}
+                            autoFocus={true}
+                        />
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={styles.modalCancelButton}
+                                onPress={() => setShowNewFileModal(false)}
+                            >
+                                <Text style={styles.modalCancelText}>キャンセル</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.modalCreateButton}
+                                onPress={handleConfirmCreateFile}
+                            >
+                                <Text style={styles.modalCreateText}>作成</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -395,5 +456,56 @@ const styles = StyleSheet.create({
     },
     tabTextActive: {
         color: colors.primary,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        width: '80%',
+        maxWidth: 400,
+    },
+    modalTitle: {
+        color: colors.textPrimary,
+        fontSize: typography.h3.fontSize,
+        fontWeight: '600',
+        marginBottom: spacing.md,
+    },
+    modalInput: {
+        backgroundColor: colors.background,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        color: colors.textPrimary,
+        fontSize: typography.body.fontSize,
+        marginBottom: spacing.md,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: spacing.sm,
+    },
+    modalCancelButton: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+    },
+    modalCancelText: {
+        color: colors.textMuted,
+        fontSize: typography.body.fontSize,
+    },
+    modalCreateButton: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+    },
+    modalCreateText: {
+        color: colors.textPrimary,
+        fontSize: typography.body.fontSize,
+        fontWeight: '500',
     },
 });

@@ -10,6 +10,7 @@ interface FileExplorerProps {
     selectedFileUri: string | null;
     onSelectFile: (fileUri: string) => void;
     onSelectFolder: () => void;
+    onCreateFile?: () => void;
 }
 
 interface ExpandedFolders {
@@ -25,6 +26,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     selectedFileUri,
     onSelectFile,
     onSelectFolder,
+    onCreateFile,
 }) => {
     const [loading, setLoading] = useState(false);
     const [expandedFolders, setExpandedFolders] = useState<ExpandedFolders>({});
@@ -94,24 +96,39 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         );
     }
 
+    // フォルダ名を取得（Web用の仮想フォルダは特別処理）
+    const getFolderDisplayName = () => {
+        if (rootUri.startsWith('web://')) {
+            return 'マイドキュメント';
+        }
+        return rootUri.split('/').pop() || 'Documents';
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={onSelectFolder}>
                     <Ionicons name="folder-open" size={18} color={colors.primary} />
                     <Text style={styles.headerTitle} numberOfLines={1}>
-                        {rootUri.split('/').pop()}
+                        {getFolderDisplayName()}
                     </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.refreshButton}
-                    onPress={() => {
-                        setFolderContents({});
-                        loadFolderContents(rootUri);
-                    }}
-                >
-                    <Ionicons name="refresh" size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
+                <View style={styles.headerActions}>
+                    {onCreateFile && (
+                        <TouchableOpacity style={styles.actionButton} onPress={onCreateFile}>
+                            <Ionicons name="add" size={18} color={colors.accentGreen} />
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => {
+                            setFolderContents({});
+                            loadFolderContents(rootUri);
+                        }}
+                    >
+                        <Ionicons name="refresh" size={18} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView style={styles.fileList} showsVerticalScrollIndicator={false}>
@@ -154,6 +171,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     refreshButton: {
+        padding: spacing.xs,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    actionButton: {
         padding: spacing.xs,
     },
     fileList: {
