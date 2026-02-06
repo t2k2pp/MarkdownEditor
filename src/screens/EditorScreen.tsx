@@ -49,35 +49,25 @@ export const EditorScreen: React.FC = () => {
     const editorRef = useRef<TextInput>(null);
 
     const handleSelectFolder = useCallback(async () => {
-        Alert.alert(
-            'フォルダを開く',
-            '対象フォルダ内の任意のファイルを選択すると、そのフォルダが開きます。',
-            [
-                { text: 'キャンセル', style: 'cancel' },
-                {
-                    text: 'ファイルを選択',
-                    onPress: async () => {
-                        try {
-                            const result = await DocumentPicker.getDocumentAsync({
-                                type: ['text/plain', 'text/markdown', '*/*'],
-                                copyToCacheDirectory: false,
-                            });
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: ['text/plain', 'text/markdown', '*/*'],
+                copyToCacheDirectory: false,
+            });
 
-                            if (!result.canceled && result.assets && result.assets.length > 0) {
-                                const uri = result.assets[0].uri;
-                                const folderUri = uri.substring(0, uri.lastIndexOf('/'));
-                                setRootFolderUri(folderUri);
-                                // 選択したファイルも開く
-                                await loadFile(uri);
-                            }
-                        } catch (error) {
-                            console.error('Error selecting file:', error);
-                            Alert.alert('エラー', 'ファイルを選択できませんでした');
-                        }
-                    },
-                },
-            ]
-        );
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const uri = result.assets[0].uri;
+                const folderUri = uri.substring(0, uri.lastIndexOf('/'));
+                setRootFolderUri(folderUri);
+                // 選択したファイルも開く
+                await loadFile(uri);
+            }
+        } catch (error) {
+            console.error('Error selecting file:', error);
+            if (Platform.OS !== 'web') {
+                Alert.alert('エラー', 'ファイルを選択できませんでした');
+            }
+        }
     }, []);
 
     const handleSelectFile = useCallback(async (fileUri: string) => {
