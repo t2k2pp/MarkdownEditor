@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
     View,
     StyleSheet,
@@ -10,9 +10,9 @@ import {
     SafeAreaView,
     StatusBar,
     Alert,
-    Dimensions,
+    Modal,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
 import * as DocumentPicker from 'expo-document-picker';
 import { MarkdownToolbar } from '../components/MarkdownToolbar';
 import { Editor } from '../components/Editor';
@@ -32,7 +32,13 @@ import {
     insertCheckbox,
     TextSelection,
 } from '../utils/markdownHelpers';
-import { readFileContent, writeFileContent } from '../utils/fileHelpers';
+import {
+    readFileContent,
+    writeFileContent,
+    getRootFolderUri,
+    isWeb,
+    createNewFile
+} from '../utils/fileHelpers';
 
 type TabType = 'edit' | 'preview';
 
@@ -46,7 +52,27 @@ export const EditorScreen: React.FC = () => {
     const [selectedFileUri, setSelectedFileUri] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+    const [showNewFileModal, setShowNewFileModal] = useState(false);
+    const [newFileName, setNewFileName] = useState('');
     const editorRef = useRef<TextInput>(null);
+
+    // Web用: 起動時にルートフォルダを初期化
+    useEffect(() => {
+        if (Platform.OS === 'web') {
+            initializeWebStorage();
+        }
+    }, []);
+
+    const initializeWebStorage = async () => {
+        try {
+            const rootUri = await getRootFolderUri();
+            if (rootUri) {
+                setRootFolderUri(rootUri);
+            }
+        } catch (error) {
+            console.error('Failed to initialize web storage:', error);
+        }
+    };
 
     const loadFile = useCallback(async (fileUri: string) => {
         try {
